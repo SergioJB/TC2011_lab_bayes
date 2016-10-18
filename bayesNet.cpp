@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 					if(buffer[i]=='='){
 						if(!indexNode){
 							aux=builder; //the node is root P(X) is independient
-							cout << "\nNode: " << aux <<"is a root\n";
+							cout << "\nNode: " << aux <<" is a root\n";
 						}
 						break; //finish the creation of the edges
 					}
@@ -101,22 +101,26 @@ int main(int argc, char *argv[])
 				for(int i=0;i < buffer.length();i++){
 					if(buffer[i]=='='){
 						break;
-					}else{
+					}else if(buffer[i]==' '&&buffer[i+1]=='=');
+					else{
 						builder+=buffer[i];
 					}
 				}
-				stringstream extract(buffer);
-				
-				do{
-					extract >> devourer; //eats all chars
-				}while(devourer!='=');
 
-				
-				extract >> readerProb;
+				if(builder.compare("")!=0){
+					stringstream extract(buffer);
+					
+					do{
+						extract >> devourer; //eats all chars
+					}while(devourer!='=');
 
-				(nodes[aux])->probabilityTable[builder]=readerProb;
+					
+					extract >> readerProb;
 
-				cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
+					(nodes[aux])->probabilityTable[builder]=readerProb;
+
+					cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
+				}
 			}
 			sect++;
 		}else if (buffer.compare("[Queries]")==0){
