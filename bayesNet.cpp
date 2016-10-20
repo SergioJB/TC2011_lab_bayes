@@ -119,6 +119,40 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 	}
 }
 
+void solveQuery(map<string, struct node*> nodes, string buffer){
+	double res;
+	string numerator, denominator;
+	numerator="";
+	denominator="";
+	bool dependece=false;
+	for (int i = 0; i < buffer.length(); i++){
+		if(buffer[i]=='|'){
+			dependece=true;
+			numerator+=", ";
+		}
+		if(!dependece){
+			if(buffer[i]!='|'){
+				numerator+=buffer[i];
+			}
+		}else{
+			if(buffer[i]!='|'){
+				numerator+=buffer[i];
+				denominator+=buffer[i];
+			}
+		}
+	}
+
+	if(denominator.compare("")==0){
+		cout << numerator << "\n";
+		//res = solveJoint(nodes,numerator);
+	}else{
+		cout << numerator << " / " << denominator << "\n";
+		//res = solveJoint(nodes,numerator) / solveJoint(nodes,denominator);
+	}
+
+	//return res;
+}
+
 int main(int argc, char *argv[])
 {
 	std::map<string, struct node*> nodes;
@@ -239,6 +273,10 @@ int main(int argc, char *argv[])
 		}else if (buffer.compare("[Queries]")==0){
 			cout << "Queries:\n";
 			getline(cin,buffer);
+			while(buffer.compare("")!=0){
+				solveQuery(nodes,buffer);
+				getline(cin,buffer);
+			}
 			sect++;
 		}
 	}
