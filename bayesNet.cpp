@@ -15,8 +15,9 @@ typedef pair<string,double> P;
 
 struct node
 {
-	std::vector<struct node *> parents; //for 0 or N-parents; if the vector is empty, the event is Independient
+	std::vector<struct node*> parents; //for 0 or N-parents; if the vector is empty, the event is Independient
 	std::map<string, double> probabilityTable;  //key is X in P(X)
+	string name;
 };
 
 void createNodes(map<string, struct node*> &nodes,string buffer){
@@ -25,11 +26,13 @@ void createNodes(map<string, struct node*> &nodes,string buffer){
 	for(int i=0;i < buffer.length();i++){
 		if(buffer[i]==','){
 			nodes[builder] = new node;
+			nodes[builder]->name = builder;
 			cout << builder << "\n";
 		}else if(i==(buffer.length()-1)){
 			builder+=buffer[i];
 			cout << builder << "\n";
 			nodes[builder] = new node;
+			nodes[builder]->name = builder;
 		}else if(buffer[i]==' '){
 			builder="";
 		}else{
@@ -63,11 +66,11 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 				//cout << '.';
 			}
 			if(indexNode){ //to make the conection in base of the dependece
-				if(find((nodes[aux])->parents.begin(),(nodes[aux])->parents.end(),nodes[builder])!=(nodes[aux])->parents.end()){
+				/*if(find((nodes[aux])->parents.begin(),(nodes[aux])->parents.end(),nodes[builder])!=(nodes[aux])->parents.end()){
 					cout << " [A.K.] ";
 					builder = "";
 				}
-				else{
+				else{*/
 					if(buffer[i]==','){
 						(nodes[aux])->parents.push_back(nodes[builder]); //to create N parents
 						cout << builder <<' ';
@@ -78,7 +81,7 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 						cout << builder <<' ';
 						builder="";
 					}
-				}
+				//}
 			}
 
 			if(buffer[i]=='='){
@@ -90,6 +93,11 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 			}
 		}
 		cout << '\n';
+		//erase duplicated nodes
+
+		sort( (nodes[aux])->parents.begin(), (nodes[aux])->parents.end() );
+		(nodes[aux])->parents.erase( unique( (nodes[aux])->parents.begin(), (nodes[aux])->parents.end() ), (nodes[aux])->parents.end() );
+
 		//probability table
 		builder="";
 		for(int i=0;i < buffer.length();i++){
@@ -116,7 +124,114 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 			cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
 		}
 
+		for(int i=0; i < (nodes[aux])->parents.size();i++){
+			cout << (nodes[aux])->parents[i]->name << " ";
+		}
+		cout << '\n';
 	}
+}
+
+string hiddenNodes(map<string, struct node*> nodes, string nodeKey){
+	string builder="";
+	//cout << "-1-\n";
+	if(nodes[nodeKey]->parents.empty()){
+		builder+=nodeKey;
+		//cout << "-2-\n";
+		//cout << builder << "\n";
+	}else{
+		//cout << "-3-\n";
+		for(int i= 0;i < nodes[nodeKey]->parents.size();i++){
+			//cout << "-4-\n";
+			//cout << i <<' ' <<nodes[nodeKey]->parents.size()<< '\n';
+			builder+= hiddenNodes(nodes,nodes[nodeKey]->parents[i]->name) + " ";
+			//cout << builder << "\n";
+		}
+		builder+=nodeKey;
+		//cout << "-5-\n";
+		//cout << builder << "\n";
+	}
+	return builder;
+}
+
+void sumatoryExpand(string buffer, vector<string> relevantNodes, vector<string> &sumExp){
+	string builder1,builder2;
+	if(relevantNodes.size()==1){
+		builder1 = buffer + ", +" + relevantNodes[0];
+		sumExp.push_back(builder1);
+		builder2 = buffer + ", -" + relevantNodes[0];
+		sumExp.push_back(builder2);
+	}else{
+		builder1 = buffer  + ", +" + relevantNodes.back();
+		builder2 = buffer  + ", -" + relevantNodes.back();
+		relevantNodes.pop_back();
+		sumatoryExpand(builder1,relevantNodes,sumExp);
+		sumatoryExpand(builder2,relevantNodes,sumExp);
+	}
+}
+
+void solveJoint(map<string, struct node*> nodes, string buffer){
+	string builder,aux,picker,hidden="";
+	cout << buffer << '\n';
+	for(int i=0;i < buffer.length();i++){
+		if(buffer[i]==','){
+			//cout << builder << '\n';
+			aux = hiddenNodes(nodes,builder);
+			builder="";
+		}
+		if(buffer[i]=='+'||buffer[i]=='-'||buffer[i]==' '||buffer[i]==',');
+		else{
+			builder+=buffer[i]; //construct the string key for the map of nodes
+		}
+
+		stringstream extract(aux);
+			
+		while(extract >> picker){
+			//extract >> picker;
+			if(hidden.find(picker)!=string::npos);
+			else{
+				hidden+= picker + " ";
+			}
+		}
+	}
+	//cout << builder << '\n';
+	aux = hiddenNodes(nodes,builder);
+	builder="";
+
+	stringstream extract1(aux);
+			
+	while(extract1 >> picker){
+		//extract >> picker;
+		if(hidden.find(picker)!=string::npos);
+		else{
+			hidden+= picker + " ";
+		}
+	}
+
+	stringstream extract2(hidden);
+
+	std::vector<string> relevantNodes;
+
+	while(extract2 >> picker){
+		//extract >> picker;
+		if(buffer.find(picker)!=string::npos);
+		else{
+			builder+= picker + " ";
+			relevantNodes.push_back(picker);
+		}
+	}
+
+	cout << "\nRelevant hidden nodes: " << builder <<'\n';
+
+	vector<string> sumExp;
+
+	if(!relevantNodes.empty()){
+		sumatoryExpand(buffer,relevantNodes,sumExp);
+
+		for(int i=0;i<sumExp.size();i++){
+			cout << sumExp[i] << '\n';
+		}
+	}
+	cout << "\n";
 }
 
 void solveQuery(map<string, struct node*> nodes, string buffer){
@@ -144,14 +259,18 @@ void solveQuery(map<string, struct node*> nodes, string buffer){
 
 	if(denominator.compare("")==0){
 		cout << numerator << "\n";
-		//res = solveJoint(nodes,numerator);
+		//res = 
+		solveJoint(nodes,numerator);
 	}else{
 		cout << numerator << " / " << denominator << "\n";
-		//res = solveJoint(nodes,numerator) / solveJoint(nodes,denominator);
+		//res = 
+		solveJoint(nodes,numerator); 
+		solveJoint(nodes,denominator);
 	}
 
 	//return res;
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -191,6 +310,7 @@ int main(int argc, char *argv[])
 			createNodes(nodes,buffer);
 			cout << '\n';
 			sect++;
+			
 		}else if(buffer.compare("[Probabilities]")==0){
 			cout << "Probabilities:\n";
 			/*
