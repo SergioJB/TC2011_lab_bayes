@@ -122,6 +122,11 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 			(nodes[aux])->probabilityTable[builder]=readerProb; //store the true values P(+X|Y)
 
 			cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
+
+			builder[0]='-';
+			(nodes[aux])->probabilityTable[builder]=1 - readerProb; //store the true values P(-X|Y)
+
+			cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
 		}
 
 		for(int i=0; i < (nodes[aux])->parents.size();i++){
