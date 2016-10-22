@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include <sstream>
 
 #include <algorithm>
@@ -27,10 +28,10 @@ void createNodes(map<string, struct node*> &nodes,string buffer){
 		if(buffer[i]==','){
 			nodes[builder] = new node;
 			nodes[builder]->name = builder;
-			cout << builder << "\n";
+			//cout << builder << "\n";
 		}else if(i==(buffer.length()-1)){
 			builder+=buffer[i];
-			cout << builder << "\n";
+			//cout << builder << "\n";
 			nodes[builder] = new node;
 			nodes[builder]->name = builder;
 		}else if(buffer[i]==' '){
@@ -57,8 +58,8 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 				indexNode = true; //the node have a parent
 				aux = builder;
 				builder="";
-				cout << "\nNode is: " << aux <<'\n';
-				cout << "Its parents are: ";
+				//cout << "\nNode is: " << aux <<'\n';
+				//cout << "Its parents are: ";
 			}
 			if(buffer[i]=='+'||buffer[i]=='-'||buffer[i]==' '||buffer[i]=='='||buffer[i]==','||buffer[i]=='|'||(buffer[i]>=48&&buffer[i]<=57));
 			else{
@@ -73,12 +74,12 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 				else{*/
 					if(buffer[i]==','){
 						(nodes[aux])->parents.push_back(nodes[builder]); //to create N parents
-						cout << builder <<' ';
+						//cout << builder <<' ';
 						builder="";
 					}else if (buffer[i]=='=')
 					{
 						(nodes[aux])->parents.push_back(nodes[builder]); //if there is only one parent
-						cout << builder <<' ';
+						//cout << builder <<' ';
 						builder="";
 					}
 				//}
@@ -87,12 +88,12 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 			if(buffer[i]=='='){
 				if(!indexNode){
 					aux=builder; //the node is root P(X) is independient
-					cout << "\nNode: " << aux <<" is a root\n";
+					//cout << "\nNode: " << aux <<" is a root\n";
 				}
 				break; //finish the creation of the edges
 			}
 		}
-		cout << '\n';
+		//cout << '\n';
 		//erase duplicated nodes
 
 		sort( (nodes[aux])->parents.begin(), (nodes[aux])->parents.end() );
@@ -121,18 +122,18 @@ void createBayesNetwork(map<string, struct node*> &nodes,string buffer){
 
 			(nodes[aux])->probabilityTable[builder]=readerProb; //store the true values P(+X|Y)
 
-			cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
+			//cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
 
 			builder[0]='-';
 			(nodes[aux])->probabilityTable[builder]=1 - readerProb; //store the true values P(-X|Y)
 
-			cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
+			//cout << "P("<< builder << ")= " << (nodes[aux])->probabilityTable[builder] << "\n";
 		}
 
-		for(int i=0; i < (nodes[aux])->parents.size();i++){
-			cout << (nodes[aux])->parents[i]->name << " ";
-		}
-		cout << '\n';
+		// for(int i=0; i < (nodes[aux])->parents.size();i++){
+		// 	cout << (nodes[aux])->parents[i]->name << " ";
+		// }
+		// cout << '\n';
 	}
 }
 
@@ -158,6 +159,90 @@ string hiddenNodes(map<string, struct node*> nodes, string nodeKey){
 	return builder;
 }
 
+double chainRule(map<string, struct node*> nodes,string chainProb){
+	string builder,name;
+	char signs[]="+-";
+	std::vector<string> index,statements,auxilarStmnt,probs;
+	//cout << "\nCHAIN RULE\n";
+	chainProb.erase (std::remove(chainProb.begin(), chainProb.end(), ','), chainProb.end()); //removes all ','
+	//cout << "commas revomed " << chainProb << '\n';
+	stringstream extract(chainProb);
+	double acum=1.0;
+	//cout << "extracting...\n";
+	while(extract >> builder){
+		statements.push_back(builder);
+		for (int i = 0; i < strlen(signs); i++){
+	      builder.erase (std::remove(builder.begin(), builder.end(), signs[i]), builder.end());
+	  	}
+	  	//cout << "signs revomed " << builder << '\n';
+	  	index.push_back(builder);
+	}
+	//cout << "chain rule...\n";
+	for (int i = 0; i < index.size(); i++)
+	{
+		//cout << index[i] <<"\n";
+		//cout << "recover keys prob table...\n";
+		std::map<string, double> copyMap = nodes[index[i]]->probabilityTable;
+		for (std::map<string,double>::iterator ite = copyMap.begin(); ite !=  copyMap.end(); ++ite)
+		{
+			if (ite->first.find(statements[i]) != std::string::npos) {
+			    probs.push_back(ite->first);
+			    //cout << ite->first << ";;";
+			}
+		}
+		//cout << "\n";
+		//cout << "checking keys...\n";
+		if(!nodes[index[i]]->parents.empty()){
+			int dependeces = nodes[index[i]]->parents.size();
+			int indexProbs;
+			//cout << "dependece...\n";
+			for(int j=0;j < probs.size();j++){
+				int count=0;
+				for (int k = 0; k < statements.size(); k++)
+				{
+					if(probs[j].find(statements[k]) != std::string::npos){
+						count++;
+					}
+				}
+				if(count == (dependeces+1)){
+					indexProbs = j;
+					break;
+				}
+			}
+			acum*=copyMap[probs[indexProbs]];
+			//cout << probs[indexProbs]<< " "<<copyMap[probs[indexProbs]] <<"*\n";
+
+		}else{
+			//int indexProbs;
+			//cout << "independece...\n";
+			// for(int j=0;j < probs.size();j++){
+			// 	int count=0;
+			// 	for (int k = 0; k < statements.size(); k++)
+			// 	{
+			// 		if(probs[j].find(statements[k]) != std::string::npos){
+			// 			count++;
+			// 			break;
+			// 		}
+			// 	}
+			// 	if(count == 1){
+			// 		indexProbs = j;
+			// 		break;
+			// 	}
+			// }
+			acum*=copyMap[probs[0]];
+			//cout << "for the node " << index[i] << " ";
+			//cout << probs[0]<< " "<<copyMap[probs[0]] <<"*\n";
+		}
+		while(!probs.empty()){
+			probs.pop_back();
+		}
+	}
+
+	//cout << acum <<"\n";
+
+	return acum;
+}
+
 void sumatoryExpand(string buffer, vector<string> relevantNodes, vector<string> &sumExp){
 	string builder1,builder2;
 	if(relevantNodes.size()==1){
@@ -174,9 +259,10 @@ void sumatoryExpand(string buffer, vector<string> relevantNodes, vector<string> 
 	}
 }
 
-void solveJoint(map<string, struct node*> nodes, string buffer){
+double solveJoint(map<string, struct node*> nodes, string buffer){
 	string builder,aux,picker,hidden="";
-	cout << buffer << '\n';
+	//cout << buffer << '\n';
+	double acum=0.0;
 	for(int i=0;i < buffer.length();i++){
 		if(buffer[i]==','){
 			//cout << builder << '\n';
@@ -225,7 +311,7 @@ void solveJoint(map<string, struct node*> nodes, string buffer){
 		}
 	}
 
-	cout << "\nRelevant hidden nodes: " << builder <<'\n';
+	//cout << "\nRelevant hidden nodes: " << builder <<'\n';
 
 	vector<string> sumExp;
 
@@ -233,10 +319,16 @@ void solveJoint(map<string, struct node*> nodes, string buffer){
 		sumatoryExpand(buffer,relevantNodes,sumExp);
 
 		for(int i=0;i<sumExp.size();i++){
-			cout << sumExp[i] << '\n';
+			//cout << sumExp[i] << '\n';
+			acum+=chainRule(nodes,sumExp[i]);
 		}
+	}else{
+		acum = chainRule(nodes,buffer);
 	}
-	cout << "\n";
+
+	//cout << acum <<"\n";
+	return acum;
+	
 }
 
 void solveQuery(map<string, struct node*> nodes, string buffer){
@@ -263,17 +355,14 @@ void solveQuery(map<string, struct node*> nodes, string buffer){
 	}
 
 	if(denominator.compare("")==0){
-		cout << numerator << "\n";
-		//res = 
-		solveJoint(nodes,numerator);
+		//cout << numerator << "\n";
+		res = solveJoint(nodes,numerator);
 	}else{
-		cout << numerator << " / " << denominator << "\n";
-		//res = 
-		solveJoint(nodes,numerator); 
-		solveJoint(nodes,denominator);
+		//cout << numerator << " / " << denominator << "\n";
+		res = solveJoint(nodes,numerator) / solveJoint(nodes,denominator);
 	}
 
-	//return res;
+	cout << res <<"\n";
 }
 
 
@@ -289,12 +378,12 @@ int main(int argc, char *argv[])
 
 	
 	int sect = 0;
-	cout << "STARTING...\n";
+	//cout << "STARTING...\n";
 	while(sect < 3){
 		getline(cin,buffer);
 		//cout << "Reading std\n";
 		if(buffer.compare("[Nodes]")==0){
-			cout << "Nodes:\n";
+			//cout << "Nodes:\n";
 			/*
 			getline(cin,buffer);
 			for(int i=0;i < buffer.length();i++){
@@ -313,11 +402,11 @@ int main(int argc, char *argv[])
 			}
 			*/
 			createNodes(nodes,buffer);
-			cout << '\n';
+			//cout << '\n';
 			sect++;
 			
 		}else if(buffer.compare("[Probabilities]")==0){
-			cout << "Probabilities:\n";
+			//cout << "Probabilities:\n";
 			/*
 			while(buffer.compare("")!=0){
 				getline(cin,buffer);
@@ -396,7 +485,7 @@ int main(int argc, char *argv[])
 			createBayesNetwork(nodes,buffer);
 			sect++;
 		}else if (buffer.compare("[Queries]")==0){
-			cout << "Queries:\n";
+			//cout << "Queries:\n";
 			getline(cin,buffer);
 			while(buffer.compare("")!=0){
 				solveQuery(nodes,buffer);
