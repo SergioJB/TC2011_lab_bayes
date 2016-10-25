@@ -21,3 +21,4 @@ Cloudy, Rain, GoingOut, RideBicycle
 +Cloudy|-Rain, +GoingOut
 -RideBicycle|+Rain
 +Cloudy|+RideBicycle
++Cloudy

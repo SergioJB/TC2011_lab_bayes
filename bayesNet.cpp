@@ -362,7 +362,8 @@ void solveQuery(map<string, struct node*> nodes, string buffer){
 		res = solveJoint(nodes,numerator) / solveJoint(nodes,denominator);
 	}
 
-	cout << res <<"\n";
+	//cout << res <<"\n";
+	printf("%.5G\n", res);
 }
 
 
